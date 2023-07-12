@@ -27,6 +27,7 @@ load(
     "if_cuda_is_configured",
 )
 load("@tsl//tsl:tsl.default.bzl", "filegroup", "get_compatible_with_cloud")
+load("@local_config_cuda//cuda:build_defs.bzl", "cuda_library")
 
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
@@ -1377,6 +1378,7 @@ cc_library(
     defines = if_cuda_is_configured(["GOOGLE_CUDA=1"]),
     deps = [
         ":backend_configs_cc",
+        ":fake_matmul",
         ":ir_emission_utils",
         "//xla:shape_util",
         "//xla:status_macros",
@@ -3967,4 +3969,35 @@ xla_cc_test(
         "@tsl//tsl/lib/core:status_test_util",
         "@tsl//tsl/platform:protobuf",
     ]) + ["//xla/tests:xla_internal_test_main"],
+)
+
+cc_library(
+    name = "fake_matmul",
+    srcs = if_cuda_is_configured(
+        [
+            "fake_matmul.cc",
+        ],
+    ),
+    hdrs = if_cuda_is_configured(["fake_matmul.h"]),
+    compatible_with = [],
+    deps = [
+        ":fake_matmul_cuda",
+        "//xla/stream_executor/gpu:gpu_stream_header",
+        "@com_google_absl//absl/status",
+        "@local_config_cuda//cuda:cuda_headers",
+    ],
+)
+
+cuda_library(
+    name = "fake_matmul_cuda",
+    srcs = if_cuda_is_configured(
+        [
+            "fake_matmul.cu.cc",
+        ],
+    ),
+    hdrs = if_cuda_is_configured(["fake_matmul.h"]),
+    compatible_with = [],
+    deps = [
+        "@local_config_cuda//cuda:cuda_headers",
+    ],
 )

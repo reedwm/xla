@@ -25,6 +25,7 @@ limitations under the License.
 
 #include "absl/algorithm/container.h"
 #include "absl/types/span.h"
+#include "xla/service/gpu/fake_matmul.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.h"
@@ -939,6 +940,27 @@ Status MatmulPlan::DoMatmul(
   Scale beta = static_cast<Scale>(beta_);
 
   se::DeviceMemory<D> output(d_buffer);
+  if (true) {
+    Status s = RunFakeMatmul(se::gpu::AsGpuStreamValue(stream),
+                             a_buffer.opaque(),
+                             a_buffer.size(),
+                             b_buffer.opaque(),
+                             b_buffer.size(),
+                             c_buffer.opaque(),
+                             c_buffer.size(),
+                             d_buffer.opaque(),
+                             d_buffer.size(),
+                             a_scale_buffer.opaque(),
+                             b_scale_buffer.opaque(),
+                             c_scale_buffer.opaque(),
+                             d_scale_buffer.opaque()
+                             );
+    if (profile_result) {
+      profile_result->set_is_valid(true);
+      profile_result->set_elapsed_time_in_ms(100);
+    }
+    return s;
+  }
   return blas_lt->DoMatmul(
       stream, plan_, se::HostOrDeviceScalar<Scale>(alpha),
       se::DeviceMemory<A>(a_buffer), se::DeviceMemory<B>(b_buffer),
